@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Shevana Admin</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --border:#334155; --text:#e2e8f0; --muted:#94a3b8; --accent:#ec4899; --ok:#10b981; --warn:#f59e0b; --err:#ef4444; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  .wrap { max-width:900px; margin:0 auto; padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:14px; color:var(--muted); margin:24px 0 12px; text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:180px; }
+  label { font-size:12px; color:var(--muted); }
+  input, select { background:#0f172a; border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:8px; font-size:14px; font-family:inherit; }
+  input:focus, select:focus { outline:none; border-color:var(--accent); }
+  button { background:var(--accent); color:white; border:0; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  button:hover { filter:brightness(1.1); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.ghost { background:transparent; border:1px solid var(--border); }
+  button.danger { background:var(--err); }
+  button.purple { background:#7c3aed; }
+  .status { padding:10px 14px; border-radius:8px; font-size:13px; margin-top:12px; }
+  .status.ok { background:rgba(16,185,129,.1); color:var(--ok); border:1px solid rgba(16,185,129,.3); }
+  .status.err { background:rgba(239,68,68,.1); color:var(--err); border:1px solid rgba(239,68,68,.3); }
+  .status.warn { background:rgba(245,158,11,.1); color:var(--warn); border:1px solid rgba(245,158,11,.3); }
+  .user-info { background:#0f172a; border:1px solid var(--border); padding:14px; border-radius:8px; margin-top:12px; font-size:13px; }
+  .user-info div { margin:2px 0; }
+  .user-info .k { color:var(--muted); display:inline-block; width:120px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .badge.starter_monthly { background:#3b82f6; color:white; }
+  .badge.premium_monthly { background:#8b5cf6; color:white; }
+  .badge.premium_yearly { background:#a855f7; color:white; }
+  .badge.vip_monthly { background:#f59e0b; color:white; }
+  .badge.free { background:#64748b; color:white; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .stat { background:#0f172a; border:1px solid var(--border); padding:14px; border-radius:8px; }
+  .stat .n { font-size:22px; font-weight:700; color:var(--text); }
+  .stat .t { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+  .tier-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px; }
+  .tier-box { background:#0f172a; border:1px solid var(--border); padding:10px 12px; border-radius:8px; font-size:12px; }
+  .tier-box .n { font-size:18px; font-weight:700; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .me { font-size:13px; color:var(--muted); }
+  #loginView, #adminView { display:none; }
+  #loginView.visible, #adminView.visible { display:block; }
+  .login-box { max-width:360px; margin:80px auto; text-align:center; }
+  code { background:#0f172a; padding:2px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="loginView">
+    <div class="card login-box">
+      <h1>Shevana Admin</h1>
+      <p style="color:var(--muted); font-size:13px;">Google ile giris yapin.</p>
+      <button id="loginBtn" style="margin-top:16px; width:100%;">Google ile Giris</button>
+      <div id="loginStatus" class="status" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="adminView">
+    <div class="topbar">
+      <h1>Shevana Admin</h1>
+      <div>
+        <span id="meEmail" class="me"></span>
+        <button id="logoutBtn" class="ghost" style="margin-left:12px;">Cikis</button>
+      </div>
+    </div>
+
+    <div id="bootstrapCard" class="card" style="display:none; border-color:var(--warn);">
+      <h2 style="color:var(--warn);">Ilk Kurulum Gerekli</h2>
+      <p style="font-size:13px; color:var(--muted); margin-top:0;">
+        Admin custom claim henuz atanmamis. Asagidaki butonu bir kez calistirin ve
+        sonra tekrar giris yapin.
+      </p>
+      <button id="bootstrapBtn" class="purple">Admin Bootstrap Calistir</button>
+      <div id="bootstrapStatus" class="status" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Istatistikler</h2>
+      <div id="statsBox" class="stats">
+        <div class="stat"><div class="n">—</div><div class="t">Toplam Kullanici</div></div>
+        <div class="stat"><div class="n">—</div><div class="t">Aktif Premium</div></div>
+        <div class="stat"><div class="n">—</div><div class="t">Son 7 Gun Kayit</div></div>
+      </div>
+      <div id="tierGrid" class="tier-grid"></div>
+      <button id="refreshStatsBtn" class="ghost" style="margin-top:12px;">Yenile</button>
+      <div id="statsStatus" class="status" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Kullanici Bul</h2>
+      <div class="row">
+        <div class="field">
+          <label>Email</label>
+          <input id="emailInput" type="email" placeholder="kullanici@ornek.com">
+        </div>
+        <button id="findBtn">Ara</button>
+      </div>
+      <div id="userInfo" class="user-info" style="display:none;"></div>
+      <div id="findStatus" class="status" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Premium Ata</h2>
+      <div class="row">
+        <div class="field">
+          <label>Plan Tipi</label>
+          <select id="planSelect">
+            <option value="starter_monthly">Starter Monthly</option>
+            <option value="premium_monthly" selected>Premium Monthly</option>
+            <option value="premium_yearly">Premium Yearly</option>
+            <option value="vip_monthly">VIP Monthly</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sure (gun)</label>
+          <input id="daysInput" type="number" value="30" min="1" max="3650">
+        </div>
+        <div class="field" style="flex:2;">
+          <label>Sebep (opsiyonel)</label>
+          <input id="reasonInput" type="text" placeholder="promosyon / destek / vs">
+        </div>
+        <button id="grantBtn">Premium Ver</button>
+      </div>
+      <div id="grantStatus" class="status" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Premium Iptal</h2>
+      <p style="font-size:12px; color:var(--muted); margin:0 0 12px;">
+        Sadece admin tarafindan verilen abonelikler iptal edilebilir.
+        IAP ile satin alinanlara dokunulmaz.
+      </p>
+      <div class="row">
+        <div class="field" style="flex:2;">
+          <label>Sebep (opsiyonel)</label>
+          <input id="revokeReasonInput" type="text" placeholder="yanlis atama / vs">
+        </div>
+        <button id="revokeBtn" class="danger">Iptal Et</button>
+      </div>
+      <div id="revokeStatus" class="status" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-functions.js";
+
+// ============================================
+// FIREBASE CONFIG — SHEVANA WEB APP
+// Firebase Console > Project Settings > General > Your apps > Web app
+// ============================================
+const firebaseConfig = {
+  apiKey: "REPLACE_WITH_WEB_API_KEY",
+  authDomain: "REPLACE.firebaseapp.com",
+  projectId: "REPLACE_PROJECT_ID",
+  storageBucket: "REPLACE.firebasestorage.app",
+  messagingSenderId: "REPLACE_SENDER_ID",
+  appId: "REPLACE_APP_ID"
+};
+
+const OWNER_EMAIL = "alibykdag@gmail.com";
+const REGION = "us-central1";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const functions = getFunctions(app, REGION);
+
+const adminBootstrap = httpsCallable(functions, "adminBootstrap");
+const adminGetStats = httpsCallable(functions, "adminGetStats");
+const adminSearchUser = httpsCallable(functions, "adminSearchUser");
+const adminGrantPremium = httpsCallable(functions, "adminGrantPremium");
+const adminRevokePremium = httpsCallable(functions, "adminRevokePremium");
+
+const $ = id => document.getElementById(id);
+const show = (el, cls, msg) => { el.style.display = "block"; el.className = "status " + cls; el.textContent = msg; };
+const hide = el => { el.style.display = "none"; };
+
+let foundEmail = null;
+
+// ── Login ──────────────────────────────────────
+$("loginBtn").onclick = async () => {
+  const s = $("loginStatus");
+  hide(s);
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    show(s, "err", "Giris hatasi: " + (e.message || e.code));
+  }
+};
+
+$("logoutBtn").onclick = () => signOut(auth);
+
+// ── Bootstrap ──────────────────────────────────
+$("bootstrapBtn").onclick = async () => {
+  const s = $("bootstrapStatus");
+  hide(s);
+  $("bootstrapBtn").disabled = true;
+  try {
+    const res = await adminBootstrap({});
+    show(s, "ok", res.data.message || "Bootstrap tamam.");
+    await auth.currentUser.getIdToken(true);
+    setTimeout(() => location.reload(), 1500);
+  } catch (e) {
+    show(s, "err", e.message || e.code);
+  } finally {
+    $("bootstrapBtn").disabled = false;
+  }
+};
+
+// ── Stats ──────────────────────────────────────
+const TIER_LABELS = {
+  starter_monthly: "Starter",
+  premium_monthly: "Premium M.",
+  premium_yearly: "Premium Y.",
+  vip_monthly: "VIP",
+};
+
+async function loadStats() {
+  const s = $("statsStatus");
+  hide(s);
+  const box = $("statsBox");
+  const tierGrid = $("tierGrid");
+  try {
+    const res = await adminGetStats({});
+    const d = res.data;
+    box.innerHTML = `
+      <div class="stat"><div class="n">${d.totalUsers ?? 0}</div><div class="t">Toplam Kullanici</div></div>
+      <div class="stat"><div class="n">${d.activePremium ?? 0}</div><div class="t">Aktif Premium</div></div>
+      <div class="stat"><div class="n">${d.recentSignups ?? 0}</div><div class="t">Son 7 Gun Kayit</div></div>
+    `;
+    if (d.byTier) {
+      tierGrid.innerHTML = Object.entries(TIER_LABELS).map(([k, label]) =>
+        `<div class="tier-box"><div class="n">${d.byTier[k] ?? 0}</div><div>${label}</div></div>`
+      ).join("");
+    }
+    $("bootstrapCard").style.display = "none";
+  } catch (e) {
+    const msg = e.message || e.code || "";
+    if (msg.toLowerCase().includes("admin")) {
+      $("bootstrapCard").style.display = "block";
+    } else {
+      show(s, "err", msg);
+    }
+  }
+}
+
+$("refreshStatsBtn").onclick = loadStats;
+
+// ── Search ─────────────────────────────────────
+$("findBtn").onclick = async () => {
+  const email = $("emailInput").value.trim();
+  const s = $("findStatus");
+  const info = $("userInfo");
+  hide(s); hide(info);
+  foundEmail = null;
+  if (!email) { show(s, "err", "Email girin"); return; }
+  $("findBtn").disabled = true;
+  try {
+    const res = await adminSearchUser({ email });
+    const d = res.data;
+    foundEmail = d.email;
+    const sub = d.subscription || {};
+    const type = sub.type || "free";
+    const badge = sub.isActive
+      ? `<span class="badge ${type}">${type}</span>`
+      : `<span class="badge free">free</span>`;
+    const expiry = sub.expiresAt
+      ? new Date(sub.expiresAt).toLocaleString("tr-TR")
+      : "—";
+    info.innerHTML = `
+      <div><span class="k">UID:</span> <code>${d.uid}</code></div>
+      <div><span class="k">Email:</span> ${d.email} ${d.emailVerified ? "✓" : "✗"}</div>
+      <div><span class="k">Ad:</span> ${d.displayName || "—"}</div>
+      <div><span class="k">Durum:</span> ${badge} ${sub.isActive ? "(Aktif)" : "(Pasif)"}</div>
+      <div><span class="k">Kaynak:</span> ${sub.grantedBy || (sub.isActive ? "IAP" : "—")}</div>
+      <div><span class="k">Bitis:</span> ${expiry}</div>
+      <div><span class="k">Kayit:</span> ${d.createdAt || "—"}</div>
+      <div><span class="k">Son Giris:</span> ${d.lastLoginAt || "—"}</div>
+    `;
+    info.style.display = "block";
+  } catch (e) {
+    show(s, "err", e.message || e.code);
+  } finally {
+    $("findBtn").disabled = false;
+  }
+};
+
+$("emailInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") $("findBtn").click();
+});
+
+// ── Grant ──────────────────────────────────────
+$("grantBtn").onclick = async () => {
+  const s = $("grantStatus");
+  hide(s);
+  if (!foundEmail) { show(s, "err", "Once kullanici ara"); return; }
+  const planType = $("planSelect").value;
+  const durationDays = parseInt($("daysInput").value, 10);
+  const reason = $("reasonInput").value.trim();
+  if (!durationDays || durationDays < 1) {
+    show(s, "err", "Gecerli bir sure girin"); return;
+  }
+  if (!confirm(`${foundEmail}\nhesabina ${planType} abonelik (${durationDays} gun) atanacak. Emin misiniz?`)) return;
+  $("grantBtn").disabled = true;
+  try {
+    const payload = { email: foundEmail, planType, durationDays };
+    if (reason) payload.reason = reason;
+    const res = await adminGrantPremium(payload);
+    const expiry = new Date(res.data.expiresAt).toLocaleString("tr-TR");
+    show(s, "ok", `Basarili. ${res.data.planType} — bitis: ${expiry}`);
+  } catch (e) {
+    show(s, "err", e.message || e.code);
+  } finally {
+    $("grantBtn").disabled = false;
+  }
+};
+
+// ── Revoke ─────────────────────────────────────
+$("revokeBtn").onclick = async () => {
+  const s = $("revokeStatus");
+  hide(s);
+  if (!foundEmail) { show(s, "err", "Once kullanici ara"); return; }
+  const reason = $("revokeReasonInput").value.trim();
+  if (!confirm(`${foundEmail}\nhesabinin admin-premium'u iptal edilecek. Emin misiniz?`)) return;
+  $("revokeBtn").disabled = true;
+  try {
+    const payload = { email: foundEmail };
+    if (reason) payload.reason = reason;
+    const res = await adminRevokePremium(payload);
+    show(s, "ok", `Iptal edildi: ${res.data.email}`);
+  } catch (e) {
+    show(s, "err", e.message || e.code);
+  } finally {
+    $("revokeBtn").disabled = false;
+  }
+};
+
+// ── Auth State ─────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  const loginStatus = $("loginStatus");
+  hide(loginStatus);
+
+  if (!user) {
+    $("adminView").classList.remove("visible");
+    $("loginView").classList.add("visible");
+    return;
+  }
+
+  if (user.email !== OWNER_EMAIL) {
+    await signOut(auth);
+    $("loginView").classList.add("visible");
+    $("adminView").classList.remove("visible");
+    show(loginStatus, "err", `Bu hesap yetkili degil: ${user.email}`);
+    return;
+  }
+
+  if (!user.emailVerified) {
+    await signOut(auth);
+    $("loginView").classList.add("visible");
+    show(loginStatus, "err", "Email dogrulanmamis.");
+    return;
+  }
+
+  $("loginView").classList.remove("visible");
+  $("adminView").classList.add("visible");
+  $("meEmail").textContent = user.email;
+
+  loadStats();
+});
+</script>
+</body>
+</html>
